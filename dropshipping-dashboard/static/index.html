@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dropshipping Dashboard</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>Dropshipping Dashboard</h1>
+  <div class="topbar-actions">
+    <span id="integrationBadges" class="badges"></span>
+    <button id="settingsBtn" class="btn-ghost">⚙ Fee Settings</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="research">Research</button>
+  <button class="tab-btn" data-tab="listings">Listings</button>
+  <button class="tab-btn" data-tab="orders">Orders</button>
+  <button class="tab-btn" data-tab="summary">Summary</button>
+</nav>
+
+<main>
+  <!-- RESEARCH TAB -->
+  <section id="tab-research" class="tab-panel active">
+    <div class="panel-row">
+      <div class="card">
+        <div class="card-header">
+          <h2>Add / Import Products</h2>
+          <button id="toggleAddForm" class="btn-ghost">+ Add product</button>
+        </div>
+
+        <form id="productForm" class="grid-form hidden">
+          <input type="hidden" id="productId">
+          <label>Title <input required id="p_title" type="text"></label>
+          <label>Category
+            <select id="p_category"></select>
+          </label>
+          <label>Cost (USD) <input required id="p_cost" type="number" step="0.01" min="0"></label>
+          <label>Weight (g) <input id="p_weight" type="number" step="1" min="0"></label>
+          <label>Warehouse
+            <select id="p_warehouse">
+              <option value="US">US (fast, ~3 days)</option>
+              <option value="HK">Hong Kong</option>
+              <option value="CN">China</option>
+              <option value="EU-UK">EU/UK</option>
+              <option value="UAE">UAE</option>
+            </select>
+          </label>
+          <label>Est. ship days <input id="p_ship_days" type="number" min="0"></label>
+          <label>Sunsky SKU <input id="p_sku" type="text"></label>
+          <label>Source URL <input id="p_url" type="text"></label>
+          <label class="full">Images (comma-separated URLs) <input id="p_images" type="text"></label>
+          <label class="full">Description <textarea id="p_description" rows="2"></textarea></label>
+          <label>Status
+            <select id="p_status">
+              <option value="researching">researching</option>
+              <option value="approved">approved</option>
+              <option value="rejected">rejected</option>
+            </select>
+          </label>
+          <div class="form-actions full">
+            <button type="submit" class="btn-primary">Save product</button>
+            <button type="button" id="cancelProductForm" class="btn-ghost">Cancel</button>
+          </div>
+        </form>
+
+        <details class="csv-import">
+          <summary>Import from Sunsky CSV export</summary>
+          <div class="grid-form">
+            <label>Category
+              <select id="csv_category"></select>
+            </label>
+            <label>CSV file <input id="csv_file" type="file" accept=".csv"></label>
+            <div class="form-actions">
+              <button id="csvImportBtn" class="btn-primary" type="button">Import</button>
+            </div>
+          </div>
+          <div id="csvResult" class="hint"></div>
+        </details>
+      </div>
+    </div>
+
+    <div class="panel-row">
+      <div class="card">
+        <div class="card-header">
+          <h2>Margin Calculator</h2>
+          <label class="inline-label">Margin threshold %
+            <input id="marginThreshold" type="number" value="20" min="0" style="width:4em">
+          </label>
+        </div>
+        <div class="table-scroll">
+          <table id="productsTable">
+            <thead>
+              <tr>
+                <th>Title</th><th>Category</th><th>Cost</th><th>Warehouse</th><th>Ship</th><th>Status</th>
+                <th colspan="3">Amazon (price / margin% / margin$)</th>
+                <th colspan="3">eBay (price / margin% / margin$)</th>
+                <th colspan="3">Etsy (price / margin% / margin$)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-row">
+      <div class="card">
+        <h2>Competitor Comps <span id="compsProductLabel" class="hint"></span></h2>
+        <p class="hint">Amazon has no reliable free comp API — paste comps you found manually. eBay/Etsy comps are manual until API keys are connected (see Fee Settings for status).</p>
+        <form id="compForm" class="grid-form">
+          <label>Marketplace
+            <select id="comp_marketplace"><option value="amazon">amazon</option><option value="ebay">ebay</option><option value="etsy">etsy</option></select>
+          </label>
+          <label>Price <input id="comp_price" type="number" step="0.01" min="0" required></label>
+          <label>Title <input id="comp_title" type="text"></label>
+          <label>URL <input id="comp_url" type="text"></label>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Add comp</button>
+          </div>
+        </form>
+        <div id="compsHistory"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LISTINGS TAB -->
+  <section id="tab-listings" class="tab-panel">
+    <div class="card">
+      <h2>Listing Drafts</h2>
+      <label>Product
+        <select id="listingProductSelect"></select>
+      </label>
+      <div class="form-actions">
+        <button class="btn-primary" data-gen="amazon">Generate Amazon draft</button>
+        <button class="btn-primary" data-gen="ebay">Generate eBay draft</button>
+        <button class="btn-primary" data-gen="etsy">Generate Etsy draft</button>
+      </div>
+      <div id="draftsContainer"></div>
+    </div>
+  </section>
+
+  <!-- ORDERS TAB -->
+  <section id="tab-orders" class="tab-panel">
+    <div class="card">
+      <div class="card-header">
+        <h2>Orders</h2>
+        <button id="toggleAddOrder" class="btn-ghost">+ Add order</button>
+      </div>
+      <form id="orderForm" class="grid-form hidden">
+        <input type="hidden" id="orderId">
+        <label>Marketplace
+          <select id="o_marketplace"><option value="amazon">amazon</option><option value="ebay">ebay</option><option value="etsy">etsy</option></select>
+        </label>
+        <label>Marketplace order ID <input id="o_marketplace_order_id" type="text"></label>
+        <label>Product
+          <select id="o_product"></select>
+        </label>
+        <label>Sale price <input id="o_sale_price" type="number" step="0.01" min="0" required></label>
+        <label>Sunsky order ID <input id="o_sunsky_order_id" type="text"></label>
+        <label>Status
+          <select id="o_status">
+            <option value="needs_sourcing">needs sourcing</option>
+            <option value="ordered_on_sunsky">ordered on Sunsky</option>
+            <option value="shipped">shipped</option>
+            <option value="delivered">delivered</option>
+          </select>
+        </label>
+        <label>Tracking number <input id="o_tracking" type="text"></label>
+        <label class="full">Notes <textarea id="o_notes" rows="2"></textarea></label>
+        <div class="form-actions full">
+          <button type="submit" class="btn-primary">Save order</button>
+          <button type="button" id="cancelOrderForm" class="btn-ghost">Cancel</button>
+        </div>
+      </form>
+      <div class="table-scroll">
+        <table id="ordersTable">
+          <thead>
+            <tr><th>Marketplace</th><th>Order ID</th><th>Product</th><th>Sale $</th><th>Date</th><th>Status</th><th>Sunsky order</th><th>Return</th><th></th></tr>
+          </thead>
+          <tbody id="ordersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="returnPanel" style="display:none">
+      <h2>Return / Refund <span id="returnOrderLabel" class="hint"></span></h2>
+      <form id="returnForm" class="grid-form">
+        <input type="hidden" id="r_order_id">
+        <label>Status
+          <select id="r_status">
+            <option value="none">none</option>
+            <option value="requested">requested</option>
+            <option value="approved">approved</option>
+            <option value="refunded">refunded</option>
+            <option value="denied">denied</option>
+          </select>
+        </label>
+        <label>Refund amount <input id="r_refund_amount" type="number" step="0.01" min="0"></label>
+        <label class="full">Reason <input id="r_reason" type="text"></label>
+        <label class="full">Notes <textarea id="r_notes" rows="2"></textarea></label>
+        <div class="form-actions full">
+          <button type="submit" class="btn-primary">Save return</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- SUMMARY TAB -->
+  <section id="tab-summary" class="tab-panel">
+    <div class="card">
+      <div class="card-header">
+        <h2>Profit Summary</h2>
+        <div>
+          <label class="inline-label">Group by
+            <select id="summaryGroupBy"><option value="month">month</option><option value="week">week</option></select>
+          </label>
+          <label class="inline-label">Marketplace
+            <select id="summaryMarketplace"><option value="">all</option><option value="amazon">amazon</option><option value="ebay">ebay</option><option value="etsy">etsy</option></select>
+          </label>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table id="summaryTable">
+          <thead><tr><th>Period</th><th>Marketplace</th><th>Revenue</th><th>Cost</th><th>Refunds</th><th>Net profit</th><th>Orders</th></tr></thead>
+          <tbody id="summaryTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="card-header"><h2>Fee Settings &amp; Integrations</h2><button id="closeSettings" class="btn-ghost">✕</button></div>
+    <div id="feeConfigsContainer"></div>
+    <h3>Integration status (Phase 2)</h3>
+    <div id="integrationStatusContainer" class="hint"></div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
